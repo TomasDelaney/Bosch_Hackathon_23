@@ -35,6 +35,8 @@ Our solution is based on a model-free reinforcement learning algorithm, which do
 Through the different weight settings of this reward function we can customize the AEB-s behaviour to suit different driving styles of the driver, such as was done by Tesla fielding multiple styles of self-driving modes in their cars.
 
 # 3) Sensor fusion capacities and deep learning based embeddings learning of the environment characteristics
+This approach supports the use of additional, somewhat redundant sensory information fusion since it can make connections between these through the help of underlying neural networks. The algorithm used in our reinforcement learning based controller relies on the TD7 algorithm, which is capable of learning the underlying structure of the sensory and environment information through the use of an encoder network. Therefore solving the problem which arises from the lack of input features which is a common occurence when creating a reinforcement learning agent in a driving related environment.
 
+# 4) Safe implementation through a simulation based learning environment which then can be transferred safely to real life cars, based on minimal sensor recordings
 
 
