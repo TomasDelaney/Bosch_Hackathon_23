@@ -1,7 +1,29 @@
+import pandas as pd
+import math
+import breakdist
 df = pd.read_csv('developmentData.csv' )
 print(df.to_string())
-object_names = ['FirstObject', 'SecondObject', 'ThirdObject', 'FourthObject']
+
 object_params = ['Distance_X', 'Distance_Y', 'Speed_X', 'Speed_Y']
+
+
+## Collect object names and params from header names
+column_names = df.columns.tolist()
+object_names = []
+object_params = []
+for column in column_names:
+    if 'Object' in column:
+        objEnd = (column.find('Object'))+len('Object')
+        object_name = column[:objEnd]
+        object_param = column[objEnd:]
+        object_params.append(object_param)
+        object_names.append(object_name)
+
+object_names = list(set(object_names))
+print(object_names)
+object_params = list(set(object_params))
+print(object_params)
+
 dataset=[]
 
 """− ObjectDistances (X,Y) 🡪 divide by 128 🡪 unit will be [m]
