@@ -77,7 +77,7 @@ class AutoEmergencyBreakEnv(gym.Env):
         self.state = [value[0] if isinstance(value, (list, tuple, str)) else value for value in self.processed_data.values()]
         self.timestep = 0
         self.dt = np.mean([self.processed_data["Timestamp"][i + 1] - self.processed_data["Timestamp"][i] for i in range(len(self.processed_data["Timestamp"]) - 1)])
-        self.max_distance_from_reference_movement = 10  # the maximum amount of distance the agent is abel to travel from the reference movements origo laterally
+        self.max_distance_from_reference_movement = 5  # the maximum amount of distance the agent is abel to travel from the reference movements origo laterally
 
         # PID controller values
         self.proportional_gait = 0.9
@@ -120,7 +120,20 @@ class AutoEmergencyBreakEnv(gym.Env):
         self.episode_data["YawRate"][self.timestep] = (wheel_angle - self.episode_data["YawRate"][self.timestep-1]) / self.dt
         self.episode_data["VehicleSpeed"][self.timestep] = self.episode_data["VehicleSpeed"][self.timestep-1] + change_in_acceleration * (self.dt**2)
 
-        # change in object distances
+        # change in object distances todo
+
+    def check_if_crashed(self):
+        if self.episode_data["FirstObjectDistance_X"][self.timestep] == self.episode_data["FirstObjectDistance_Y"][self.timestep] == 0:
+            return True
+        if self.episode_data["SecondObjectDistance_X"][self.timestep] == self.episode_data["SecondObjectDistance_Y"][self.timestep] == 0:
+            return True
+        if self.episode_data["ThirdObjectDistance_X"][self.timestep] == self.episode_data["ThirdObjectDistance_Y"][self.timestep] == 0:
+            return True
+        if self.episode_data["FourthObjectDistance_X"][self.timestep] == self.episode_data["FourthObjectDistance_Y"][self.timestep] == 0:
+            return True
+
+    def calculate_distance_from_origo(self):
+        pass
 
     def step(self, action):
         # take a step in the simulation
@@ -136,16 +149,24 @@ class AutoEmergencyBreakEnv(gym.Env):
         # take a step in the simulation
 
         # check if the simulation is over and return the reward functions value
+        reward = 0
         done = False
-        crashed = False
+        crashed = self.check_if_crashed()
         in_danger_zone = False
+
+        if crashed:
+            done = True
+            reward = -10
+            print("Car crashed")
 
         if self.timestep+1 >= self.max_ep_len:
             done = True
+        elif self.distance_from_origo > self.max_distance_from_reference_movement:
+            done = True
+            reward = -10
+            print("Car went off the road")
 
         # define the reward function
-        reward = 0
-
         # sub-reward weights
         weigth_action_smoothness = 0.05
         weight_control_force = 0.05
