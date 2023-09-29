@@ -5,6 +5,7 @@ import gym
 from gym import spaces
 from preprocess_for_RL import load_csv
 from PID_controller import PIDController
+from Break_distance_bosch_calc import calculate_brake_distance_bosch
 
 
 class AutoEmergencyBreakEnv(gym.Env):
@@ -20,6 +21,7 @@ class AutoEmergencyBreakEnv(gym.Env):
         self.max_wheel_turn_angle = max_wheel_turn_angle  # in radians
         self.safe_stop_distance = safe_stop_distance  # meters
         self.speed_offset = speed_offset  # meters
+        self.t_lat = 0.75  # the reaction time of the driver in seconds
 
         # measured attributes from the camera
         self.processed_data = load_csv()
@@ -90,11 +92,12 @@ class AutoEmergencyBreakEnv(gym.Env):
         # previous control values
         self.previous_wheel_angle = 0
         self.previous_pedal_value = 0
-        self.second_previous_wheel_angle = 0
-        self.second_previous_pedal_value = 0
+        self.second_previous_wheel_angle = self.previous_wheel_angle
+        self.second_previous_pedal_value = self.previous_pedal_value
 
         # variable to keep check how far it has strayed away from the initial position-> keeps the sim bounded
-        self.distance_from_origo =0
+        self.distance_from_origo = 0
+        self.angle_of_the_wheel = 0
         self.max_ep_len = self.processed_data["FourthObjectSpeed_Y"].size
 
     def transform_actions(self, actions):
@@ -135,6 +138,15 @@ class AutoEmergencyBreakEnv(gym.Env):
     def calculate_distance_from_origo(self):
         pass
 
+    def check_if_in_danger_zone(self, closest_object_x, closest_object_y):
+        # checks if the closest objcet is in braking distance and also if the car is facing it or not
+        in_danger = False
+        braking_distance = 0
+
+
+
+        return in_danger, braking_distance
+
     def step(self, action):
         # take a step in the simulation
         wheel_angle, pedal_value = self.transform_actions(action)
@@ -166,18 +178,45 @@ class AutoEmergencyBreakEnv(gym.Env):
             reward = -10
             print("Car went off the road")
 
-        # define the reward function
-        # sub-reward weights
-        weigth_action_smoothness = 0.05
-        weight_control_force = 0.05
+        # Determine if it is in danger (inside braking distance and is heading toward the object) todo
+
 
         # divide the reward function into 2 parts (out of the danger zone and in danger zone)
         if in_danger_zone:
             # calculate how the breaking computes a reward
-            pass
+            # sub-reward weights
+            weight_stopping_in_time = 0.6
+            weight_action_smoothness = 0.2
+            weight_control_force = 0.2
+
+            # stopping in time distance
+
+            # action smoothness
+            sum_smoothness_wheel = np.mean((action[0] - 2 * self.previous_wheel_angle + self.second_previous_wheel_angle) ** 2)
+            sum_smoothness_pedal = np.mean((action[1] - 2 * self.previous_pedal_value + self.second_previous_pedal_value) ** 2)
+
+            sum_smoothness = sum_smoothness_pedal + sum_smoothness_wheel
+            smoothness_reward = np.exp(-(sum_smoothness / 2) + 1e-8)
+
+            # limit the amount of change in speed and wheel angle
+            sum_actions = np.sum(action)
+
+            # sum up the rewards
+            reward = weight_action_smoothness * smoothness_reward + weight_control_force * sum_actions
+
+
         else:
             # alive no issues this is the optimal state
             reward = 1
+
+        # set to the previous values
+        self.second_previous_wheel_angle = self.previous_wheel_angle
+        self.second_previous_pedal_value = self.previous_pedal_value
+        self.previous_wheel_angle = action[0]
+        self.previous_pedal_value = action[1]
+
+        # update the state vector
+        self.state = [value[self.timestep] if isinstance(value, (list, tuple, str)) else value for value in self.processed_data.values()]
 
         return self.state, reward, done
 
