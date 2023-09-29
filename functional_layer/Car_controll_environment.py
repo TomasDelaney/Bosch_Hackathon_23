@@ -98,6 +98,7 @@ class AutoEmergencyBreakEnv(gym.Env):
         # variable to keep check how far it has strayed away from the initial position-> keeps the sim bounded
         self.distance_from_origo = 0
         self.angle_of_the_wheel = 0
+        self.acc = 0
         self.max_ep_len = self.processed_data["FourthObjectSpeed_Y"].size
 
     def transform_actions(self, actions):
@@ -123,7 +124,7 @@ class AutoEmergencyBreakEnv(gym.Env):
         self.episode_data["YawRate"][self.timestep] = (wheel_angle - self.episode_data["YawRate"][self.timestep-1]) / self.dt
         self.episode_data["VehicleSpeed"][self.timestep] = self.episode_data["VehicleSpeed"][self.timestep-1] + change_in_acceleration * (self.dt**2)
 
-        # change in object distances todo
+        # change in object distances
 
     def check_if_crashed(self):
         if self.episode_data["FirstObjectDistance_X"][self.timestep] == self.episode_data["FirstObjectDistance_Y"][self.timestep] == 0:
@@ -139,11 +140,9 @@ class AutoEmergencyBreakEnv(gym.Env):
         pass
 
     def check_if_in_danger_zone(self, closest_object_x, closest_object_y):
-        # checks if the closest objcet is in braking distance and also if the car is facing it or not
+        # checks if the closest object is in braking distance and also if the car is facing it or not
         in_danger = False
-        braking_distance = 0
-
-
+        braking_distance = 100
 
         return in_danger, braking_distance
 
@@ -156,6 +155,7 @@ class AutoEmergencyBreakEnv(gym.Env):
 
         # increment the timestep and how the simulation changes based on the RL agents action
         self.timestep += 1
+        self.acc += pedal_value
         self.calculate_change_in_sensor_readings(wheel_angle, pedal_value)
 
         # take a step in the simulation
@@ -164,7 +164,7 @@ class AutoEmergencyBreakEnv(gym.Env):
         reward = 0
         done = False
         crashed = self.check_if_crashed()
-        in_danger_zone = False
+        in_danger_zone, braking_distance = self.check_if_in_danger_zone(1, 2)
 
         if crashed:
             done = True
@@ -178,9 +178,6 @@ class AutoEmergencyBreakEnv(gym.Env):
             reward = -10
             print("Car went off the road")
 
-        # Determine if it is in danger (inside braking distance and is heading toward the object) todo
-
-
         # divide the reward function into 2 parts (out of the danger zone and in danger zone)
         if in_danger_zone:
             # calculate how the breaking computes a reward
@@ -190,6 +187,8 @@ class AutoEmergencyBreakEnv(gym.Env):
             weight_control_force = 0.2
 
             # stopping in time distance
+            sum_braking_distance = braking_distance - self.episode_data["VehicleSpeed"][self.timestep] * self.dt + self.acc * (self.dt**2)
+            brake_distance_reward = np.exp(-(sum_braking_distance / 20) + 1e-8)
 
             # action smoothness
             sum_smoothness_wheel = np.mean((action[0] - 2 * self.previous_wheel_angle + self.second_previous_wheel_angle) ** 2)
@@ -202,8 +201,7 @@ class AutoEmergencyBreakEnv(gym.Env):
             sum_actions = np.sum(action)
 
             # sum up the rewards
-            reward = weight_action_smoothness * smoothness_reward + weight_control_force * sum_actions
-
+            reward = weight_action_smoothness * smoothness_reward + weight_control_force * sum_actions + weight_stopping_in_time * brake_distance_reward
 
         else:
             # alive no issues this is the optimal state
