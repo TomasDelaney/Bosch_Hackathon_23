@@ -39,7 +39,7 @@ This formula is taken from the book "A Policy on Geometric Design of Highways an
 [https://www.omnicalculator.com/physics/stopping-distance](https://www.omnicalculator.com/physics/stopping-distance)'''
 
 
-def calculate_brake_distance_2(t_reaction, v_kmh):
+def calculate_brake_distance(t_reaction, v_kmh):
     G = 0  # Grade(slope) of the road, expressed as a decimal.
     # Positivefor an uphill grade and negative for a downhill road
     f = 0.7  # Coefficient of friction between the tires and the road.
