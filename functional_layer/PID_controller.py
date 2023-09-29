@@ -26,10 +26,9 @@ class PIDController:
 
         return output
 
+
 if __name__ == "__main__":
     # Example usage:
-    # Setpoint is the desired value you want the system to reach
-    setpoint = 100.0
 
     # PID gains (you may need to adjust these depending on your system)
     kp = 0.1
@@ -37,7 +36,7 @@ if __name__ == "__main__":
     kd = 0.05
 
     # Create a PID controller instance
-    pid_controller = PIDController(kp, ki, kd, setpoint)
+    pid_controller = PIDController(kp, ki, kd)
 
     # Simulate a process (e.g., temperature control)
     current_value = 50.0

@@ -2,9 +2,9 @@ import numpy as np
 import random
 import torch
 import gym
-from gym.utils import seeding
 from gym import spaces
 from preprocess_for_RL import load_csv
+from PID_controller import PIDController
 
 
 class AutoEmergencyBreakEnv(gym.Env):
@@ -70,21 +70,32 @@ class AutoEmergencyBreakEnv(gym.Env):
             max(self.processed_data["FourthObjectSpeed_X"]),
             max(self.processed_data["FourthObjectSpeed_Y"]),
             max(self.processed_data["YawRate"])
-
         ])
 
         self.observation_space = spaces.Box(low=low, high=high, dtype=np.float64)
 
         self.state = [value[0] if isinstance(value, (list, tuple, str)) else value for value in self.processed_data.values()]
         self.timestep = 0
-        self.dt =  np.mean([self.processed_data["Timestamp"][i + 1] - self.processed_data["Timestamp"][i] for i in range(len(self.processed_data["Timestamp"]) - 1)])
+        self.dt = np.mean([self.processed_data["Timestamp"][i + 1] - self.processed_data["Timestamp"][i] for i in range(len(self.processed_data["Timestamp"]) - 1)])
         self.max_distance_from_reference_movement = 10  # the maximum amount of distance the agent is abel to travel from the reference movements origo laterally
-
 
         # PID controller values
         self.proportional_gait = 0.9
         self.integral_gait = 0.1
         self.derivative_gait = 0.05
+
+        self.wheel_PID = PIDController(kp=self.proportional_gait, ki=self.integral_gait, kd=self.derivative_gait)
+        self.pedal_PID = PIDController(kp=self.proportional_gait, ki=self.integral_gait, kd=self.derivative_gait)
+
+        # previous control values
+        self.previous_wheel_angle = 0
+        self.previous_pedal_value = 0
+        self.second_previous_wheel_angle = 0
+        self.second_previous_pedal_value = 0
+
+        # variable to keep check how far it has strayed away from the initial position-> keeps the sim bounded
+        self.distance_from_origo =0
+        self.max_ep_len = self.processed_data["FourthObjectSpeed_Y"].size
 
     def transform_actions(self, actions):
         # transform the actions created by the agent: wheel angle and gas/break
@@ -109,21 +120,30 @@ class AutoEmergencyBreakEnv(gym.Env):
         self.episode_data["YawRate"][self.timestep] = (wheel_angle - self.episode_data["YawRate"][self.timestep-1]) / self.dt
         self.episode_data["VehicleSpeed"][self.timestep] = self.episode_data["VehicleSpeed"][self.timestep-1] + change_in_acceleration * (self.dt**2)
 
-        #
+        # change in object distances
 
     def step(self, action):
         # take a step in the simulation
-        wheel_angle, change_in_acc = self.transform_actions(action)
+        wheel_angle, pedal_value = self.transform_actions(action)
+
+        wheel_angle = self.wheel_PID.compute(wheel_angle - self.previous_wheel_angle)
+        pedal_value = self.pedal_PID.compute(pedal_value - self.previous_pedal_value)
 
         # increment the timestep and how the simulation changes based on the RL agents action
         self.timestep += 1
-        self.calculate_change_in_sensor_readings(wheel_angle, change_in_acc)
+        self.calculate_change_in_sensor_readings(wheel_angle, pedal_value)
 
         # take a step in the simulation
 
         # check if the simulation is over and return the reward functions value
         done = False
+        crashed = False
         in_danger_zone = False
+
+        if self.timestep+1 >= self.max_ep_len:
+            done = True
+
+        # define the reward function
         reward = 0
 
         # sub-reward weights
@@ -133,11 +153,12 @@ class AutoEmergencyBreakEnv(gym.Env):
         # divide the reward function into 2 parts (out of the danger zone and in danger zone)
         if in_danger_zone:
             # calculate how the breaking computes a reward
+            pass
         else:
             # alive no issues this is the optimal state
             reward = 1
 
-    return reward, self.state
+        return self.state, reward, done
 
     def reset(self):
         # resets the environment
@@ -147,7 +168,8 @@ class AutoEmergencyBreakEnv(gym.Env):
         return self.state, score
 
     def close(self):
-        # close the simulation
+        # close the simulation -> call the internal functions of the sim
+        print("Closing the simulation")
         pass
 
 # low level controller: PID
@@ -164,7 +186,23 @@ if __name__ == "__main__":
 
     env = AutoEmergencyBreakEnv(max_acceleration=max_acceleration, max_deceleration=max_deceleration,
                                 max_wheel_turn_angle=max_wheel_turn_angle, safe_stop_distance=safe_stop_distance,
-                                speed_offset = speed_offset)
+                                speed_offset=speed_offset)
+    scores = []
+    # test the running of the environment
+    for i in range(1):
+        observation, score = env.reset()
+        done = False
+        ep_len = score
+        while not done:
+            action = np.array([0, 0])  # random action
+            observation_, reward, done = env.step(action)
+            score += reward
+            ep_len += 1
+
+        scores.append(score)
+        print("Score: ", score, ", Episode length: ", ep_len, ", Score in percent to max: ", score / ep_len * 100, " Average score: ", np.mean(scores))
+
+    env.close()
 
 
 
