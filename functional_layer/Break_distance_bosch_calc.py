@@ -2,24 +2,25 @@
 
 def calculate_brake_distance_bosch(vEgo, t_lat, aEgo, v0):
     # constants
-    max_jerk = 30 # m/s^2
-    aMax = 9 # m/s^2  maximum deceleration
+    max_jerk = 30  # m/s^2
+    aMax = 9  # m/s^2  maximum deceleration
 
     # variables: aEgo: acc/dec of the vehicle, vEgo: speed of the vehicle
     t2 = (aMax - aEgo) / max_jerk
-    delta_v1 = (max_jerk/2) * (t2**2) + aEgo * t2
+    delta_v1 = (max_jerk / 2) * (t2 ** 2) + aEgo * t2
     v1 = v0 + delta_v1
     delta_v2 = -v1
     t3 = delta_v2 / aMax
 
     # break distance parts
-    d1 = vEgo * t_lat + (aEgo/2) * (t2**2) + vEgo * t2
-    d2 = (max_jerk/6) * (t2**3) + (aEgo/2) * (t2**2) + vEgo * t2
-    d3 = (aMax/2) * (t3**2) + v1 * t3
+    d1 = vEgo * t_lat + (aEgo / 2) * (t2 ** 2) + vEgo * t2
+    d2 = (max_jerk / 6) * (t2 ** 3) + (aEgo / 2) * (t2 ** 2) + vEgo * t2
+    d3 = (aMax / 2) * (t3 ** 2) + v1 * t3
 
     break_distance = d1 + d2 + d3
 
     return break_distance
+
 
 '''## Break Distance calculation
 The AASHTO stopping distance formula is as follows:
@@ -39,10 +40,10 @@ This formula is taken from the book "A Policy on Geometric Design of Highways an
 
 
 def calculate_brake_distance_2(t_reaction, v_kmh):
-    G = 0  #Grade(slope) of the road, expressed as a decimal.
+    G = 0  # Grade(slope) of the road, expressed as a decimal.
     # Positivefor an uphill grade and negative for a downhill road
-    f = 0.7     #Coefficient of friction between the tires and the road. 
+    f = 0.7  # Coefficient of friction between the tires and the road.
     # It is assumed to be 0.7 on a dry road and between 0.3 and 0.4 on a wet road.
-    break_dist = ((0.278 * t_reaction * v_kmh) + v_kmh*v_kmh) / (254 * (f + G))
-    
+    break_dist = ((0.278 * t_reaction * v_kmh) + v_kmh * v_kmh) / (254 * (f + G))
+
     return break_dist
