@@ -19,3 +19,7 @@ f – Coefficient of friction between the tires and the road. It is assumed to b
 This formula is taken from the book "A Policy on Geometric Design of Highways and Streets". It is commonly used in road design for establishing the minimum stopping sight distance required on a given road. With correct parameters, it's a perfect equation for the accurate calculation of the stopping distance of your car. Clearly, it's different than the typical formula used in the speed calculator.
 
 [https://www.omnicalculator.com/physics/stopping-distance](https://www.omnicalculator.com/physics/stopping-distance)
+
+
+## Functional layer implementation:
+The purpose of the functional layer is to control the Automatic Emergency Brake (AEB) inorder to avoid or mitigate collisions. Our functional layer solution involves a reinforcement learning based PID controller hybrid controller which aims to address the following challenges: 1) Addressing the dynamic, complex environments which commonly occur during driving, 2) Ability to deploy different types of risk averse behaviours specified to the drivers need, 3) Safe implementation through a simulation based learning environment which then can be transferred safely to real life cars, based on minimal sensor recordings, 4) Sensor fusion capacities and deep learning based embeddings learning of the environment characteristics. 
