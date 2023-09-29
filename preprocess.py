@@ -14,7 +14,7 @@ for index, row in df.iterrows():
     data_dict['YawRate'] = row['YawRate']
     objects = []
     for obj in object_names:
-        obj_dict = {'name': obj}
+        obj_dict = {'name': obj, 'state': True}
         for param in object_params:
             if 'Distance' in param:
                 obj_dict[param] = row[(obj + param)]/128
