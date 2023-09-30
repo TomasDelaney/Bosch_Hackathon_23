@@ -1,6 +1,6 @@
 import pandas as pd
 import math
-import breakdist
+import Break_distance_bosch_calc
 import classification
 import objectFilter
 import preprocessing
