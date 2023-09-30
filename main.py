@@ -1,6 +1,8 @@
 import pandas as pd
+import sys, os
+sys.path.extend([f'./{name}' for name in os.listdir(".") if os.path.isdir(name)])
 import math
-import Break_distance_bosch_calc
+from functional_layer import Break_distance_bosch_calc as breakdist
 import classification
 import objectFilter
 import preprocessing
@@ -18,6 +20,7 @@ classifydict = dict(  Paraleel=0, Perpendicular=0, Turn=0, Unclassified=0)
 
 for id, situation in enumerate(dataset):
     if id > 0:
+        print('\n',situation['Timestamp'], end=' ')
         breakDist = breakdist.calculate_brake_distance(2.5, situation['VehicleSpeed'])
 
         closest = objectFilter.predictPath(situation, 10, breakDist, situation['dt'], CAR_WIDTH)
@@ -29,10 +32,10 @@ for id, situation in enumerate(dataset):
             speedVect = objectFilter.warning(closest)
 
             if speedVect['warning'] != 'Not dangerous':
+
                 '''if warning exists for object store it and classify the sitation'''
                 warnings_timestamped.append( {'Timestamp': situation['Timestamp'], 'status': WARNING_DICT[speedVect['warning']], 'object_id': closest['idx']} )
                 sitName = classification.classifySituation(situation['VehicleSpeed'], closest['Speed_X'], closest['Speed_Y'], situation['YawRate']*situation['dt'])
-                print(sitName)
                 if sitName in classifydict:
                     classifydict[sitName] = classifydict[sitName]+1
                 else:
@@ -47,6 +50,7 @@ for id, situation in enumerate(dataset):
         obj = dataset[id]['objects'][filtered]
 
         filteredObjects.append(obj)
+
 
 
 '''Add warnings with timestamps to the csv file'''
