@@ -5,6 +5,8 @@ import numpy as np
 import math
 
 # initializing BEGINNING
+
+pygame.init()
 pygame.font.init()
 pygame.mixer.init()
 
@@ -14,14 +16,17 @@ SIMULATION = pygame.display.set_mode((WIDTH, HEIGHT))
 display_surface = pygame.display.get_surface()
 SIMULATION.blit(pygame.transform.flip(SIMULATION, False, True), dest=(0, 0))
 
+WARNING_LIST = ['NOT DANGEROUS', 'TACTILE WARNING', 'TACTILE & SOUND WARNING', 'EMERGENCY BREAK']
 dataset = []
 objects_dataset = []
 
+Status = []
 Timestamps = []
 YawRates = []
 VehicleSpeed = []
 
 TEXT_FONT = pygame.font.SysFont('arial', 30)
+WARNING_TEXT_FONT = pygame.font.SysFont('arial', 50)
 
 FPS = 60
 VEHICLE_WIDTH = 100
@@ -51,19 +56,15 @@ class Vehicle:
 
     # vehicle movement
     def move(self, speed_x, speed_y, rotate):
-        print(rotate)
         self.vehicle_x += speed_x * math.cos(rotate)
         self.vehicle_y -= speed_y * 20 * math.sin(rotate)
-        self.vehicle_front_x = VEHICLE_WIDTH * math.cos(rotate) - (VEHICLE_HEIGHT / 2) * math.sin(
-            rotate) + self.vehicle_x
-        self.vehicle_front_y = -(
-                    VEHICLE_WIDTH * math.sin(rotate) + (VEHICLE_HEIGHT / 2) * math.cos(rotate)) + self.vehicle_y
-        print(self.vehicle_x, self.vehicle_y)
+        self.vehicle_front_x = VEHICLE_WIDTH * math.cos(rotate) - (VEHICLE_HEIGHT / 2) * math.sin(rotate) + self.vehicle_x
+        self.vehicle_front_y = -(VEHICLE_WIDTH * math.sin(rotate) + (VEHICLE_HEIGHT / 2) * math.cos(rotate)) + self.vehicle_y
+
 
     # car picture loading and rotation
     def load_image(self, vehicle_image):
-        vehicle = pygame.transform.rotate(pygame.transform.scale(vehicle_image, (VEHICLE_WIDTH, VEHICLE_HEIGHT)),
-                                          np.rad2deg(self.rotate))
+        vehicle = pygame.transform.rotate(pygame.transform.scale(vehicle_image, (VEHICLE_WIDTH, VEHICLE_HEIGHT)), np.rad2deg(self.rotate))
         return vehicle
 
     # vehicle drawing
@@ -111,10 +112,35 @@ class Object:
 # pygame base window visualisation /w timestamp and step#
 def draw_window(timestamp=0, index=0):
     SIMULATION.blit(BACKGROUND, (0, 0))
-    # display_surface = pygame.display.get_surface()
-    SIMULATION.blit(pygame.transform.flip(SIMULATION, False, True), dest=(0, 0))
     timestamp_text = TEXT_FONT.render("Timestamp: " + str(timestamp) + "  Index: " + str(index), 1, (255, 255, 255))
     SIMULATION.blit(timestamp_text, (WIDTH - 500, 10))
+
+
+# pygame warning visualisation
+def draw_warning(index=0,ObjectName = 'name'):
+    position = 100
+
+    if ObjectName == 'FirstObject':
+        position = 100
+    elif ObjectName == 'SecondObject':
+        position = 150
+    elif ObjectName == 'ThirdObject':
+        position = 200
+    elif ObjectName == 'FourthObject':
+        position = 250
+
+    if index == 0:
+        warning_text = WARNING_TEXT_FONT.render(str(WARNING_LIST[index]), 1, (0, 255, 0))
+        SIMULATION.blit(warning_text, (50, HEIGHT - position))
+    elif index == 1:
+        warning_text = WARNING_TEXT_FONT.render(str(WARNING_LIST[index]), 1, (255, 100, 100))
+        SIMULATION.blit(warning_text, (50, HEIGHT - position))
+    elif index == 2:
+        warning_text = WARNING_TEXT_FONT.render(str(WARNING_LIST[index]), 1, (255, 50, 50))
+        SIMULATION.blit(warning_text, (50, HEIGHT - position))
+    elif index == 3:
+        warning_text = WARNING_TEXT_FONT.render(str(WARNING_LIST[index]), 1, (255, 0, 0))
+        SIMULATION.blit(warning_text, (50, HEIGHT - position))
 
 
 # end sim
@@ -125,7 +151,7 @@ def end_simulation(keys_pressed):
 
 # data loader function /w scaling
 def load_data():
-    df = pd.read_csv(os.path.join('Dataset', 'developmentData.csv'))
+    df = pd.read_csv(os.path.join('statusdevelopmentData.csv'))
 
     ## Collect object names and params from header names
     column_names = df.columns.tolist()
@@ -137,10 +163,8 @@ def load_data():
             object_names.append(object_name)
 
     object_names = list(dict.fromkeys(object_names))
-    print(object_names)
     object_params = ['Distance_X', 'Distance_Y', 'Speed_X', 'Speed_Y']
 
-    # print(object_params)
     number_of_objects = len(object_names)
 
     """− ObjectDistances (X,Y) 🡪 divide by 128 🡪 unit will be [m]
@@ -149,25 +173,26 @@ def load_data():
     for index, row in df.iterrows():
         data_dict = {}
         data_dict['Timestamp'] = row['Timestamp']
-        data_dict['VehicleSpeed'] = row['VehicleSpeed'] / 256 * 9
+        data_dict['VehicleSpeed'] = row['VehicleSpeed'] / 256 * 7
         data_dict['YawRate'] = row['YawRate']
+        data_dict['status'] = row['status']
 
+        Status.append(row['status'])
         Timestamps.append(row['Timestamp'])
-        VehicleSpeed.append(float(row['VehicleSpeed']) / 256 * 9)
+        VehicleSpeed.append(float(row['VehicleSpeed']) / 256 * 7)
         if (row['YawRate'] == '0'):
             YawRates.append(float(row['YawRate']))
         else:
-            YawRates.append(float(row['YawRate'].replace(',', '.')))
+            YawRates.append(float(row['YawRate']))
         objects = []
 
         for obj in object_names:
-            obj_dict = {'name': obj, 'state': False}
+            obj_dict = {'name': obj}
             for param in object_params:
                 if 'Distance' in param:
-                    # print(param)
-                    obj_dict[param] = row[(obj + param)] / 128 * 9
+                    obj_dict[param] = row[(obj + param)] / 128 * 7
                 elif 'Speed' in param:
-                    obj_dict[param] = row[(obj + param)] / 256 * 9
+                    obj_dict[param] = row[(obj + param)] / 256 * 7
                 else:
                     obj_dict[param] = row[(obj + param)]
             objects.append(obj_dict)
@@ -178,12 +203,10 @@ def load_data():
         object_coord = []
         for element in dataset:  # an element in a list of dictionaries, so an element is a dictionary
             coord = []
-            # print(element['objects'])
             for instance in element['objects']:
                 if instance['name'] == obj:
                     coord = (
-                    obj, instance['Distance_X'], instance['Distance_Y'], instance['Speed_X'], instance['Speed_Y'],
-                    instance['state'])
+                        obj, instance['Distance_X'], instance['Distance_Y'], instance['Speed_X'], instance['Speed_Y'])
                     object_coord.append(coord)
         objects_dataset.append(object_coord)
 
@@ -195,8 +218,10 @@ def main():
     clock = pygame.time.Clock()
     run = True
     # initialising/loading data BEGINNING
+
     vehicle_image = pygame.image.load(os.path.join('Assets', 'car.png'))
-    object_image = pygame.image.load(os.path.join('Assets', 'object.png'))
+    object_image_green = pygame.image.load(os.path.join('Assets', 'object_green.png'))
+    object_image_black = pygame.image.load(os.path.join('Assets', 'object.png'))
     object_image_red = pygame.image.load(os.path.join('Assets', 'object_red.png'))
 
     timestamp = Timestamps[0]
@@ -210,47 +235,44 @@ def main():
     vehicle.draw_vehicle(vehicle_image)
 
     FirstObject = Object()
-    if objects_dataset[0][0][5]:
-        FirstObject.draw_object(object_image_red)
-    else:
-        FirstObject.draw_object(object_image)
+    FirstObject.draw_object(object_image_green)
 
     SecondObject = Object()
-    if objects_dataset[1][0][5]:
-        SecondObject.draw_object(object_image_red)
-    else:
-        SecondObject.draw_object(object_image)
+    SecondObject.draw_object(object_image_black)
 
     ThirdObject = Object()
-    if objects_dataset[2][0][5]:
-        ThirdObject.draw_object(object_image_red)
-    else:
-        ThirdObject.draw_object(object_image)
+    ThirdObject.draw_object(object_image_black)
 
     FourthObject = Object()
-    if objects_dataset[3][0][5]:
-        FourthObject.draw_object(object_image_red)
-    else:
-        FourthObject.draw_object(object_image)
+    FourthObject.draw_object(object_image_black)
 
     index = 0
     max_index = len(Timestamps) - 1
     while run:
         # failsafe: make run false -> program stops
         clock.tick(FPS)
+        pygame.init()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
                 pygame.quit()
+
+        # failsafe
+        keys_pressed = pygame.key.get_pressed()
+        end_simulation(keys_pressed)
+
+        if index > max_index:
+            # index = 0
+            run = False
+            pygame.quit()
+            exit(0)
 
         timestamp = Timestamps[index]
         speed_x = 0
         speed_y = 0
 
         if index > 0:
-            dt = float(Timestamps[index].replace(',', '.')) - float(Timestamps[index - 1].replace(',', '.'))
-            # print(dt)
-            # print(f'rotate {rotate}')
+            dt = float(Timestamps[index]) - float(Timestamps[index - 1])
 
             # rotation and placement of vehicle based on dataset
             rotate += YawRates[index - 1] * dt
@@ -298,40 +320,25 @@ def main():
         vehicle.move(speed_x, speed_y, rotate_object)
         vehicle.draw_vehicle(vehicle_image)
 
-        if objects_dataset[0][0][5]:
+        # Checking if danger of collision has been detected
+        state_FirstObject = int(Status[index])
+
+        if state_FirstObject == 0:
+            FirstObject.draw_object(object_image_green)
+            draw_warning(state_FirstObject, 'FirstObject')
+        else:
             FirstObject.draw_object(object_image_red)
-        else:
-            FirstObject.draw_object(object_image)
+            draw_warning(state_FirstObject, 'FirstObject')
 
-        if objects_dataset[1][0][5]:
-            SecondObject.draw_object(object_image_red)
-        else:
-            SecondObject.draw_object(object_image)
-
-        if objects_dataset[2][0][5]:
-            ThirdObject.draw_object(object_image_red)
-        else:
-            ThirdObject.draw_object(object_image)
-
-        if objects_dataset[3][0][5]:
-            FourthObject.draw_object(object_image_red)
-        else:
-            FourthObject.draw_object(object_image)
+        SecondObject.draw_object(object_image_black)
+        ThirdObject.draw_object(object_image_black)
+        FourthObject.draw_object(object_image_black)
 
         pygame.display.update()
-        pygame.time.wait(5)
+        pygame.time.wait(15)
 
         # ending
         index += 1
-
-        if index > max_index:
-            # index = 0
-            run = False
-        # failsafe
-        keys_pressed = pygame.key.get_pressed()
-        end_simulation(keys_pressed)
-
-        pygame.display.update()
 
     main()
 
