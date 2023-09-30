@@ -4,6 +4,23 @@ A Github repository containing the available source code and solution documentat
 
 Visualization created using pygame.
 
+---
+## Guide to running the code
+
+```bash
+pip install pandas
+pip install pygame
+```
+
+```python
+
+python main.py
+
+python simulation.py
+```
+
+-----
+
 ## Functional layer implementation:
 The purpose of the functional layer is to control the Automatic Emergency Brake (AEB) inorder to avoid or mitigate collisions. Our functional layer solution involves a reinforcement learning based PID controller hybrid controller which aims to address the following challenges: 1) Addressing the dynamic, complex environments which commonly occur during driving, 2) Ability to deploy different types of risk averse behaviours specified to the drivers need, 3) Sensor fusion capacities and deep learning based embeddings learning of the environment characteristics, 4) Safe implementation through a simulation based learning environment which then can be transferred safely to real life cars, based on minimal sensor recordings.
 
