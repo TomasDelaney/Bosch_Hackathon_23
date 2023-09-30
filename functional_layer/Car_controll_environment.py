@@ -198,10 +198,11 @@ class AutoEmergencyBreakEnv(gym.Env):
             smoothness_reward = np.exp(-(sum_smoothness / 2) + 1e-8)
 
             # limit the amount of change in speed and wheel angle
-            sum_actions = np.sum(action)
+            sum_actions = np.sum(abs(action))
+            sum_action_reward = np.exp(-(sum_actions / 2) + 1e-8)
 
             # sum up the rewards
-            reward = weight_action_smoothness * smoothness_reward + weight_control_force * sum_actions + weight_stopping_in_time * brake_distance_reward
+            reward = weight_action_smoothness * smoothness_reward + weight_control_force * sum_action_reward + weight_stopping_in_time * brake_distance_reward
 
         else:
             # alive no issues this is the optimal state
