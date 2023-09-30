@@ -13,9 +13,10 @@ pip install pygame
 ```
 
 ```python
-
+# Run data processing and predictions
 python main.py
 
+# Visualization
 python simulation.py
 ```
 
