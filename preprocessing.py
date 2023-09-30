@@ -1,7 +1,7 @@
 import pandas as pd
 import classification
 import objectFilter
-import breakdist
+from functional_layer import Break_distance_bosch_calc as breakdist
 
 
 def load_data(filepath):
