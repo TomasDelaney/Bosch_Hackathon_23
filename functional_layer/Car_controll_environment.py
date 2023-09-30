@@ -182,7 +182,7 @@ class AutoEmergencyBreakEnv(gym.Env):
         if in_danger_zone:
             # calculate how the breaking computes a reward
             # sub-reward weights
-            weight_stopping_in_time = 0.6
+            weight_stopping_in_time = 0.5
             weight_action_smoothness = 0.2
             weight_control_force = 0.2
 
