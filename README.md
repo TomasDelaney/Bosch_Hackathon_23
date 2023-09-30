@@ -43,4 +43,26 @@ This approach supports the use of additional, somewhat redundant sensory informa
 ### 4) Safe implementation through a simulation based learning environment which then can be transferred safely to real life cars, based on minimal sensor recordings
 Through the use of simulation we can safely allow our controller to train and explore a wide set of possible controller behaviours, which then can be implemented in real worl cars as done by: https://www.nature.com/articles/s41586-023-06419-4, where through the residual modeling of sensor noise, even 50 seconds of real life recordings were enough to teach world champion level drone control through a reinforcement learning based controller.  
 
+## Situation layer implementation
+
+Potentially dangerous objects are filtered out based on distance and on predicted trajectory based on current properties of the vehicle and objects. 
+
+Situations and advised warning signs are calculated on the distance and the optimal breaking distance:
+
+- Tactile driving wheele
+- Sound signals
+- Flashing lights
+- Emergency break
+
+Situations are classified based on the radius of turn and the speed vectors of the relevant object, into 
+- CPNCO – Car to Pedestrian Nearside Child Obstructed
+- CPTA – Car to Pedestrian Turn Adult
+- CPLA – Car to Pedestrian Longitudinal Adul
+
+The breaking distance function can be adjusted, to suit up-to-date weather or driver reaction time parameters.
+
+## Visualization
+
+The vehicle and the objects are visualized using pygame. 
+
 
